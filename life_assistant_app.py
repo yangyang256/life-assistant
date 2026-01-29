@@ -50,7 +50,7 @@ uploaded_file = st.file_uploader(
 if uploaded_file is not None:
     try:
         df = pd.read_excel(uploaded_file)
-    except Exception as e:
+    except Exception:
         st.error("❌ Excel 文件读取失败，请确认格式正确")
         st.stop()
 
@@ -63,15 +63,12 @@ if uploaded_file is not None:
         "第二天状态"
     ]
 
-    # 检查列是否齐全
     missing = [col for col in required_columns if col not in df.columns]
     if missing:
         st.error(f"❌ Excel 缺少以下列：{missing}")
         st.stop()
 
-    # 只用有标签的数据训练
     train_df = df.dropna(subset=["第二天状态"])
-
     if len(train_df) < 5:
         st.warning("⚠️ 数据太少，建议至少 5 天以上再预测")
         st.stop()
@@ -87,17 +84,13 @@ if uploaded_file is not None:
     X = train_df[features]
     y = train_df["第二天状态"]
 
-    # ================= 训练模型 =================
     model = LogisticRegression()
     model.fit(X, y)
 
-    # ================= 取今天的数据 =================
     today = df.iloc[-1]
     X_today = today[features].values.reshape(1, -1)
-
     prob = model.predict_proba(X_today)[0][1]
 
-    # ================= 展示结果 =================
     st.subheader("📊 预测结果")
     st.metric("明天状态好的概率", f"{prob:.2%}")
 
@@ -127,11 +120,4 @@ else:
     st.info("👆 请先上传你的 Excel 文件")
 
 st.divider()
-
-# ================= 安全说明 =================
 st.caption("🔒 所有数据仅用于当前预测，不会被保存或记录。")
-
-
-else:
-    st.write("请上传一个 Excel 文件。")
-
